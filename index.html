@@ -11,16 +11,11 @@
 </head>
 <body>
 
-<!-- film grain + vignette overlay, present across the whole experience -->
 <div class="grain-overlay" aria-hidden="true"></div>
 <div class="vignette-overlay" aria-hidden="true"></div>
 
-<!-- floating heart particles, ambient background -->
 <div class="hearts-field" id="heartsField" aria-hidden="true"></div>
 
-<!-- ======================== -->
-<!-- 1) LOGIN SCREEN -->
-<!-- ======================== -->
 <section id="loginScreen" class="screen login-screen" aria-label="Login">
   <div class="login-card">
     <p class="login-eyebrow">a private door</p>
@@ -38,9 +33,6 @@
   </div>
 </section>
 
-<!-- ======================== -->
-<!-- 2) FAKE HACKING SCREEN -->
-<!-- ======================== -->
 <section id="hackScreen" class="screen hack-screen" aria-hidden="true">
   <div class="hack-inner">
     <div class="warning-icon" id="warningIcon">⚠</div>
@@ -52,12 +44,8 @@
   <div class="scanlines" aria-hidden="true"></div>
 </section>
 
-<!-- ======================== -->
-<!-- 3) MAIN PAGE -->
-<!-- ======================== -->
 <main id="mainPage" class="screen main-page" aria-hidden="true">
 
-  <!-- background music -->
   <audio id="bgMusic" loop preload="none">
     <source src="vidssave.com Mohamed Mounir - Fi 3esh2 El Banat _ محمد منير - في عشق البنات 256kbps.webm" type="audio/webm">
   </audio>
@@ -67,7 +55,6 @@
     <span class="music-ring"></span>
   </button>
 
-  <!-- HERO / TIMER -->
   <section class="hero-section">
     <p class="hero-eyebrow">every second, counted</p>
     <h1 class="hero-title">ours, since<br><span>March 16, 2026</span></h1>
@@ -100,7 +87,6 @@
     </div>
   </section>
 
-  <!-- ENVELOPE -->
   <section class="envelope-section">
     <p class="section-eyebrow">02 — a letter</p>
     <h2 class="section-title">something I wrote for you</h2>
@@ -121,7 +107,6 @@
     </div>
   </section>
 
-  <!-- message overlay -->
   <div class="message-overlay" id="messageOverlay" aria-hidden="true">
     <div class="message-card" id="messageCard">
       <button class="message-close" id="messageClose" aria-label="Close letter">✕</button>
@@ -173,7 +158,6 @@
     </div>
   </div>
 
-  <!-- GALLERY -->
   <section class="gallery-section">
     <p class="section-eyebrow">03 — memories</p>
     <h2 class="section-title">moments I keep replaying</h2>
@@ -198,9 +182,15 @@
         <img src="3.jpg" alt="Candlelight dinner" loading="lazy">
       </div>
     </div>
+
+    <div class="gallery-actions">
+      <button type="button" class="view-all-btn" id="viewAllBtn">
+        <span class="view-all-icon">⊞</span>
+        <span>شوفي كل الصور</span>
+      </button>
+    </div>
   </section>
 
-  <!-- fullscreen image modal -->
   <div class="image-modal" id="imageModal" aria-hidden="true">
     <button class="modal-close" id="modalClose" aria-label="Close image">✕</button>
     <button class="modal-nav modal-prev" id="modalPrev" aria-label="Previous image">‹</button>
@@ -208,7 +198,15 @@
     <button class="modal-nav modal-next" id="modalNext" aria-label="Next image">›</button>
   </div>
 
-  <!-- FEATURED VIDEO -->
+  <div class="gallery-grid-modal" id="galleryGridModal" aria-hidden="true">
+    <div class="gallery-grid-inner">
+      <button class="modal-close" id="galleryGridClose" aria-label="Close gallery">✕</button>
+      <p class="section-eyebrow">03 — memories</p>
+      <h3 class="gallery-grid-title">كل الصور</h3>
+      <div class="gallery-grid" id="galleryGrid"></div>
+    </div>
+  </div>
+
   <section class="video-section">
     <p class="section-eyebrow">04 — a little film</p>
     <h2 class="section-title">watch this, for me?</h2>
@@ -224,16 +222,12 @@
     </div>
   </section>
 
-  <!-- ======================== -->
-  <!-- 05) UPLOAD SPACE (Drive) -->
-  <!-- ======================== -->
   <section class="upload-section">
     <p class="section-eyebrow">05 — the safe space</p>
     <h2 class="section-title">leave something here</h2>
 
     <div class="upload-grid">
 
-      <!-- IMAGE UPLOAD -->
       <div class="upload-card">
         <div class="upload-icon">🖼</div>
         <h3 class="upload-card-title">صورة</h3>
@@ -245,7 +239,6 @@
         <div class="upload-status" id="imageStatus"></div>
       </div>
 
-      <!-- VOICE NOTE -->
       <div class="upload-card">
         <div class="upload-icon">🎙</div>
         <h3 class="upload-card-title">Voice Note</h3>
@@ -258,7 +251,6 @@
         <ul class="voice-notes-list" id="voiceNotesList" aria-live="polite"></ul>
       </div>
 
-      <!-- VIDEO UPLOAD -->
       <div class="upload-card">
         <div class="upload-icon">🎬</div>
         <h3 class="upload-card-title">فيديو</h3>
@@ -275,9 +267,6 @@
     <p class="upload-note">كل حاجة بترفعيها بتتحفظ في مكان آمن، ومحدش يشوفها غيره 🌹</p>
   </section>
 
-  <!-- ======================== -->
-  <!-- 06) SAVED VOICE NOTES GALLERY -->
-  <!-- ======================== -->
   <section class="voice-gallery-section">
     <p class="section-eyebrow">06 — sounds you left</p>
     <h2 class="section-title">your voice notes</h2>

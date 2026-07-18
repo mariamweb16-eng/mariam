@@ -1,13 +1,8 @@
 (() => {
   'use strict';
 
-  /* ============================================
-     CONFIG — edit these two things for your gift
-     ============================================ */
-  const PASSWORD = '1/6'; // change this to whatever you like
+  const PASSWORD = '1/6';
   const START_DATE = new Date('2026-03-16T10:30:00');
-
-  // ⚠️ حطي هنا الرابط اللي هتاخديه بعد عمل Deploy للـ Apps Script
   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwefC2TcvY1veOwYdVM9phZh5Q32k9CPYnJU1OPbFUevNbLcLUoYkSu8gE-AEV-8IZI_g/exec';
 
   const WRONG_PASSWORD_MESSAGES = [
@@ -18,9 +13,6 @@
   ];
   let wrongAttempts = 0;
 
-  /* ============================================
-     ELEMENT REFS
-     ============================================ */
   const loginScreen = document.getElementById('loginScreen');
   const loginForm = document.getElementById('loginForm');
   const passwordInput = document.getElementById('passwordInput');
@@ -49,9 +41,11 @@
   const modalPrev = document.getElementById('modalPrev');
   const modalNext = document.getElementById('modalNext');
 
-  /* ============================================
-     AMBIENT FLOATING HEARTS
-     ============================================ */
+  const viewAllBtn = document.getElementById('viewAllBtn');
+  const galleryGridModal = document.getElementById('galleryGridModal');
+  const galleryGridClose = document.getElementById('galleryGridClose');
+  const galleryGrid = document.getElementById('galleryGrid');
+
   function spawnHeart() {
     const heart = document.createElement('span');
     heart.className = 'floating-heart';
@@ -69,9 +63,6 @@
   const heartInterval = setInterval(spawnHeart, 900);
   for (let i = 0; i < 6; i++) setTimeout(spawnHeart, i * 300);
 
-  /* ============================================
-     1) LOGIN
-     ============================================ */
   loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const value = passwordInput.value.trim();
@@ -90,7 +81,6 @@
       wrongAttempts++;
 
       passwordInput.classList.remove('shake');
-      // force reflow so the animation can restart
       void passwordInput.offsetWidth;
       passwordInput.classList.add('shake');
     }
@@ -101,9 +91,6 @@
     loginError.classList.add('show');
   }
 
-  /* ============================================
-     2) FAKE HACKING SCREEN
-     ============================================ */
   const HACK_MESSAGES = [
     'Initiating connection...',
     'System Breached...',
@@ -169,7 +156,6 @@
   }
 
   function playGlitchSound() {
-    // Lightweight synthesized glitch blips via WebAudio — no external file needed.
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
@@ -187,9 +173,7 @@
         osc.stop(t + 0.09);
         t += 0.12 + Math.random() * 0.25;
       }
-    } catch (err) {
-      // Audio not available — silently skip, the visuals still land.
-    }
+    } catch (err) {}
   }
 
   function finishHackSequence() {
@@ -203,9 +187,6 @@
     }, 700);
   }
 
-  /* ============================================
-     3) MAIN PAGE REVEAL
-     ============================================ */
   function revealMainPage() {
     mainPage.setAttribute('aria-hidden', 'false');
     requestAnimationFrame(() => {
@@ -217,11 +198,9 @@
     loadSavedVoiceNotes();
   }
 
-  /* ---- جلب اللي اترفع من Drive وعرضه في الموقع ---- */
-  // ✅ الصيغة دي (lh3.googleusercontent.com) أكتر ثباتاً لعرض الصور جوه <img>
-  // من صيغة drive.google.com/uc?export=view اللي بتتعطل أحياناً جوه صفحات تانية
   const DRIVE_IMAGE_URL = (id) => `https://lh3.googleusercontent.com/d/${id}`;
   const DRIVE_PREVIEW_URL = (id) => `https://drive.google.com/file/d/${id}/preview`;
+  const DRIVE_AUDIO_URL = (id) => `https://drive.google.com/uc?export=view&id=${id}`;
 
   async function fetchDriveList(category) {
     if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'PASTE_YOUR_WEB_APP_URL_HERE') return [];
@@ -229,9 +208,7 @@
       const res = await fetch(`${APPS_SCRIPT_URL}?action=list&category=${encodeURIComponent(category)}`);
       const data = await res.json();
       if (data.status === 'success') return data.items;
-    } catch (err) {
-      // فشل هادئ — الموقع يشتغل عادي حتى لو الجلب فشل
-    }
+    } catch (err) {}
     return [];
   }
 
@@ -265,29 +242,93 @@
     });
   }
 
+  const WAVEFORM_BAR_COUNT = 28;
+
+  function buildVoicePlayer(audioEl, { savedNote } = {}) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'ig-voice-note' + (savedNote ? ' saved-note' : '');
+
+    const playBtn = document.createElement('button');
+    playBtn.type = 'button';
+    playBtn.className = 'ig-voice-play';
+    playBtn.innerHTML = '<span class="icon-play">▶</span><span class="icon-pause">❚❚</span>';
+
+    const waveform = document.createElement('div');
+    waveform.className = 'ig-voice-waveform';
+    for (let i = 0; i < WAVEFORM_BAR_COUNT; i++) {
+      const bar = document.createElement('span');
+      const height = 25 + Math.round(Math.random() * 75);
+      bar.style.setProperty('--bar-h', height + '%');
+      bar.style.setProperty('--bar-delay', (Math.random() * 0.9).toFixed(2) + 's');
+      waveform.appendChild(bar);
+    }
+
+    const duration = document.createElement('span');
+    duration.className = 'ig-voice-duration';
+    duration.textContent = '0:00';
+
+    wrapper.appendChild(playBtn);
+    wrapper.appendChild(waveform);
+    wrapper.appendChild(duration);
+    wrapper.appendChild(audioEl);
+    audioEl.style.display = 'none';
+
+    function formatTime(sec) {
+      if (!isFinite(sec) || isNaN(sec)) return '0:00';
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m}:${String(s).padStart(2, '0')}`;
+    }
+
+    audioEl.addEventListener('loadedmetadata', () => {
+      duration.textContent = formatTime(audioEl.duration);
+    });
+    audioEl.addEventListener('timeupdate', () => {
+      const remaining = audioEl.duration - audioEl.currentTime;
+      duration.textContent = formatTime(audioEl.paused ? audioEl.duration : remaining);
+    });
+    audioEl.addEventListener('play', () => wrapper.classList.add('playing'));
+    audioEl.addEventListener('pause', () => wrapper.classList.remove('playing'));
+    audioEl.addEventListener('ended', () => {
+      wrapper.classList.remove('playing');
+      duration.textContent = formatTime(audioEl.duration);
+    });
+
+    playBtn.addEventListener('click', () => {
+      document.querySelectorAll('audio').forEach((a) => {
+        if (a !== audioEl && !a.paused) a.pause();
+      });
+      if (audioEl.paused) audioEl.play().catch(() => {});
+      else audioEl.pause();
+    });
+
+    return wrapper;
+  }
+
   async function loadSavedVoiceNotes() {
     const notes = await fetchDriveList('VoiceNotes');
     const container = document.getElementById('savedVoiceNotesList');
     const emptyMsg = document.getElementById('savedVoiceNotesEmpty');
     if (!container) return;
 
-    if (notes.length === 0) return; // خليه على رسالة "لسه مفيش" الافتراضية
+    if (notes.length === 0) return;
 
     if (emptyMsg) emptyMsg.remove();
+    container.innerHTML = '';
 
     notes.forEach((item) => {
       const li = document.createElement('li');
       li.className = 'voice-note-item';
-      const iframe = document.createElement('iframe');
-      iframe.className = 'voice-note-frame';
-      iframe.src = DRIVE_PREVIEW_URL(item.id);
-      iframe.title = item.name || 'تسجيل صوتي';
-      li.appendChild(iframe);
+
+      const audio = document.createElement('audio');
+      audio.preload = 'metadata';
+      audio.src = DRIVE_AUDIO_URL(item.id);
+
+      li.appendChild(buildVoicePlayer(audio, { savedNote: true }));
       container.appendChild(li);
     });
   }
 
-  /* ---- elapsed timer (count up) ---- */
   const tDays = document.getElementById('tDays');
   const tHours = document.getElementById('tHours');
   const tMinutes = document.getElementById('tMinutes');
@@ -319,7 +360,6 @@
     timerInterval = setInterval(updateTimer, 1000);
   }
 
-  /* ---- background music ---- */
   function tryAutoplayMusicOnce() {
     bgMusic.volume = 0.5;
     const playPromise = bgMusic.play();
@@ -327,7 +367,6 @@
       playPromise.then(() => {
         musicToggle.setAttribute('aria-pressed', 'true');
       }).catch(() => {
-        // Autoplay blocked — user can still tap the button manually.
         musicToggle.setAttribute('aria-pressed', 'false');
       });
     }
@@ -345,7 +384,6 @@
   bgMusic.addEventListener('pause', () => musicToggle.setAttribute('aria-pressed', 'false'));
   bgMusic.addEventListener('play', () => musicToggle.setAttribute('aria-pressed', 'true'));
 
-  /* ---- envelope / love letter ---- */
   function openEnvelope() {
     envelope.classList.add('opened');
     setTimeout(() => {
@@ -377,8 +415,6 @@
     if (e.key === 'Escape' && messageOverlay.classList.contains('visible')) closeEnvelope();
   });
 
-  /* ---- gallery + fullscreen modal ---- */
-  // بنجيب كروت الصور "لايف" كل مرة، عشان اللي بيتضاف من Drive يشتغل معاها من غير ما نربط الأحداث من جديد
   function getImageCards() {
     return Array.from(gallerySlider.querySelectorAll('.gallery-card:not(.gallery-card-video)'));
   }
@@ -415,7 +451,6 @@
     }, 180);
   }
 
-  // event delegation عشان يشتغل مع الكروت اللي بتتضاف بعد التحميل الأول برضو
   gallerySlider.addEventListener('click', (e) => {
     const card = e.target.closest('.gallery-card');
     if (!card || card.classList.contains('gallery-card-video')) return;
@@ -437,16 +472,52 @@
     if (e.key === 'ArrowRight') showImage(1);
   });
 
-  /* ============================================
-     4) UPLOADS — send to Google Drive via Apps Script
-     ============================================ */
+  function populateGalleryGrid() {
+    galleryGrid.innerHTML = '';
+    const cards = getImageCards();
+    cards.forEach((card, index) => {
+      const img = card.querySelector('img');
+      if (!img) return;
+      const item = document.createElement('div');
+      item.className = 'gallery-grid-item';
+      const thumb = document.createElement('img');
+      thumb.src = img.src;
+      thumb.alt = img.alt;
+      thumb.loading = 'lazy';
+      item.appendChild(thumb);
+      item.addEventListener('click', () => {
+        closeGalleryGrid();
+        openModal(index);
+      });
+      galleryGrid.appendChild(item);
+    });
+  }
 
-  // يحول أي ملف لـ base64 عشان نقدر نبعته في JSON
+  function openGalleryGrid() {
+    populateGalleryGrid();
+    galleryGridModal.classList.add('visible');
+    galleryGridModal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeGalleryGrid() {
+    galleryGridModal.classList.remove('visible');
+    galleryGridModal.setAttribute('aria-hidden', 'true');
+  }
+
+  if (viewAllBtn) viewAllBtn.addEventListener('click', openGalleryGrid);
+  if (galleryGridClose) galleryGridClose.addEventListener('click', closeGalleryGrid);
+  galleryGridModal.addEventListener('click', (e) => {
+    if (e.target === galleryGridModal) closeGalleryGrid();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && galleryGridModal.classList.contains('visible')) closeGalleryGrid();
+  });
+
   function fileToBase64(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => {
-        const result = reader.result; // "data:mime;base64,XXXX"
+        const result = reader.result;
         const base64 = result.split(',')[1];
         resolve(base64);
       };
@@ -490,7 +561,6 @@
     }
   }
 
-  /* ---- image upload ---- */
   const imageInput = document.getElementById('imageInput');
   const imageStatus = document.getElementById('imageStatus');
 
@@ -504,7 +574,6 @@
     });
   }
 
-  /* ---- video upload ---- */
   const videoInput = document.getElementById('videoInput');
   const videoStatus = document.getElementById('videoStatus');
 
@@ -518,7 +587,6 @@
     });
   }
 
-  /* ---- voice note recording ---- */
   const recordBtn = document.getElementById('recordBtn');
   const recordLabel = document.getElementById('recordLabel');
   const voiceStatus = document.getElementById('voiceStatus');
@@ -551,13 +619,11 @@
       mediaRecorder.onstop = async () => {
         const blob = new Blob(recordedChunks, { type: 'audio/webm' });
         addVoiceNoteToList(blob);
-        // نوقف كل التراكات عشان نطفي الميكروفون
         stream.getTracks().forEach((track) => track.stop());
 
-        // نرفعها أوتوماتيك على Drive
         const fakeFile = new File([blob], 'voice-note.webm', { type: 'audio/webm' });
         await uploadToDrive({ file: fakeFile, category: 'VoiceNotes', statusEl: voiceStatus, fileNamePrefix: 'voice' });
-        loadSavedVoiceNotes(); // نحدّث القايمة تحت في قسم "your voice notes"
+        loadSavedVoiceNotes();
       };
 
       mediaRecorder.start();
@@ -585,13 +651,11 @@
     li.className = 'voice-note-item';
 
     const audio = document.createElement('audio');
-    audio.controls = true;
     audio.src = url;
 
-    li.appendChild(audio);
+    li.appendChild(buildVoicePlayer(audio));
     voiceNotesList.prepend(li);
   }
 
-  /* focus login input on load for convenience */
   window.addEventListener('load', () => passwordInput.focus());
 })();
