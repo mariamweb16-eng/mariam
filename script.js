@@ -213,6 +213,76 @@
     });
     startTimer();
     document.body.addEventListener('click', tryAutoplayMusicOnce, { once: true });
+    loadUploadedGallery();
+    loadSavedVoiceNotes();
+  }
+
+  /* ---- جلب اللي اترفع من Drive وعرضه في الموقع ---- */
+  const DRIVE_IMAGE_URL = (id) => `https://drive.google.com/uc?export=view&id=${id}`;
+  const DRIVE_PREVIEW_URL = (id) => `https://drive.google.com/file/d/${id}/preview`;
+
+  async function fetchDriveList(category) {
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'PASTE_YOUR_WEB_APP_URL_HERE') return [];
+    try {
+      const res = await fetch(`${APPS_SCRIPT_URL}?action=list&category=${encodeURIComponent(category)}`);
+      const data = await res.json();
+      if (data.status === 'success') return data.items;
+    } catch (err) {
+      // فشل هادئ — الموقع يشتغل عادي حتى لو الجلب فشل
+    }
+    return [];
+  }
+
+  async function loadUploadedGallery() {
+    const [images, videos] = await Promise.all([
+      fetchDriveList('Images'),
+      fetchDriveList('Videos')
+    ]);
+
+    images.forEach((item) => {
+      const card = document.createElement('div');
+      card.className = 'gallery-card';
+      const img = document.createElement('img');
+      img.src = DRIVE_IMAGE_URL(item.id);
+      img.alt = item.name || 'صورة محفوظة';
+      img.loading = 'lazy';
+      card.appendChild(img);
+      gallerySlider.appendChild(card);
+    });
+
+    videos.forEach((item) => {
+      const card = document.createElement('div');
+      card.className = 'gallery-card gallery-card-video';
+      const iframe = document.createElement('iframe');
+      iframe.src = DRIVE_PREVIEW_URL(item.id);
+      iframe.setAttribute('allow', 'autoplay');
+      iframe.setAttribute('allowfullscreen', '');
+      iframe.title = item.name || 'فيديو محفوظ';
+      card.appendChild(iframe);
+      gallerySlider.appendChild(card);
+    });
+  }
+
+  async function loadSavedVoiceNotes() {
+    const notes = await fetchDriveList('VoiceNotes');
+    const container = document.getElementById('savedVoiceNotesList');
+    const emptyMsg = document.getElementById('savedVoiceNotesEmpty');
+    if (!container) return;
+
+    if (notes.length === 0) return; // خليه على رسالة "لسه مفيش" الافتراضية
+
+    if (emptyMsg) emptyMsg.remove();
+
+    notes.forEach((item) => {
+      const li = document.createElement('li');
+      li.className = 'voice-note-item';
+      const iframe = document.createElement('iframe');
+      iframe.className = 'voice-note-frame';
+      iframe.src = DRIVE_PREVIEW_URL(item.id);
+      iframe.title = item.name || 'تسجيل صوتي';
+      li.appendChild(iframe);
+      container.appendChild(li);
+    });
   }
 
   /* ---- elapsed timer (count up) ---- */
@@ -306,12 +376,18 @@
   });
 
   /* ---- gallery + fullscreen modal ---- */
-  const galleryCards = Array.from(gallerySlider.querySelectorAll('.gallery-card'));
+  // بنجيب كروت الصور "لايف" كل مرة، عشان اللي بيتضاف من Drive يشتغل معاها من غير ما نربط الأحداث من جديد
+  function getImageCards() {
+    return Array.from(gallerySlider.querySelectorAll('.gallery-card:not(.gallery-card-video)'));
+  }
+
   let currentImageIndex = 0;
 
   function openModal(index) {
+    const cards = getImageCards();
+    const img = cards[index] && cards[index].querySelector('img');
+    if (!img) return;
     currentImageIndex = index;
-    const img = galleryCards[index].querySelector('img');
     modalImage.src = img.src;
     modalImage.alt = img.alt;
     imageModal.classList.add('visible');
@@ -324,8 +400,9 @@
   }
 
   function showImage(delta) {
-    currentImageIndex = (currentImageIndex + delta + galleryCards.length) % galleryCards.length;
-    const img = galleryCards[currentImageIndex].querySelector('img');
+    const cards = getImageCards();
+    currentImageIndex = (currentImageIndex + delta + cards.length) % cards.length;
+    const img = cards[currentImageIndex].querySelector('img');
     modalImage.style.transform = 'scale(0.85)';
     modalImage.style.opacity = '0';
     setTimeout(() => {
@@ -336,8 +413,13 @@
     }, 180);
   }
 
-  galleryCards.forEach((card, index) => {
-    card.addEventListener('click', () => openModal(index));
+  // event delegation عشان يشتغل مع الكروت اللي بتتضاف بعد التحميل الأول برضو
+  gallerySlider.addEventListener('click', (e) => {
+    const card = e.target.closest('.gallery-card');
+    if (!card || card.classList.contains('gallery-card-video')) return;
+    const cards = getImageCards();
+    const index = cards.indexOf(card);
+    if (index > -1) openModal(index);
   });
 
   modalClose.addEventListener('click', closeModal);
@@ -416,6 +498,7 @@
       if (!file) return;
       await uploadToDrive({ file, category: 'Images', statusEl: imageStatus, fileNamePrefix: 'image' });
       imageInput.value = '';
+      loadUploadedGallery();
     });
   }
 
@@ -429,6 +512,7 @@
       if (!file) return;
       await uploadToDrive({ file, category: 'Videos', statusEl: videoStatus, fileNamePrefix: 'video' });
       videoInput.value = '';
+      loadUploadedGallery();
     });
   }
 
@@ -471,6 +555,7 @@
         // نرفعها أوتوماتيك على Drive
         const fakeFile = new File([blob], 'voice-note.webm', { type: 'audio/webm' });
         await uploadToDrive({ file: fakeFile, category: 'VoiceNotes', statusEl: voiceStatus, fileNamePrefix: 'voice' });
+        loadSavedVoiceNotes(); // نحدّث القايمة تحت في قسم "your voice notes"
       };
 
       mediaRecorder.start();

@@ -25,6 +25,9 @@ function doPost(e) {
     var blob = Utilities.newBlob(decoded, mimeType, fileName);
     var file = subFolder.createFile(blob);
 
+    // خليها قابلة للعرض عن طريق اللينك بس، عشان الموقع يقدر يعرضها
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
     return jsonOutput({
       status: 'success',
       fileId: file.getId(),
@@ -39,6 +42,40 @@ function doPost(e) {
   }
 }
 
+// بيرجع قايمة بكل الملفات في category معينة (Images / Videos / VoiceNotes)
+// بيتنادى من الموقع كده: APPS_SCRIPT_URL?action=list&category=Images
+function doGet(e) {
+  try {
+    var action = e.parameter.action;
+
+    if (action === 'list') {
+      var category = e.parameter.category || 'Images';
+      var mainFolder = DriveApp.getFolderById(MAIN_FOLDER_ID);
+      var subFolder = getOrCreateFolder(mainFolder, category);
+
+      var files = subFolder.getFiles();
+      var items = [];
+      while (files.hasNext()) {
+        var f = files.next();
+        items.push({
+          id: f.getId(),
+          name: f.getName(),
+          mimeType: f.getMimeType(),
+          date: f.getDateCreated().getTime()
+        });
+      }
+      items.sort(function (a, b) { return b.date - a.date; });
+
+      return jsonOutput({ status: 'success', items: items });
+    }
+
+    return jsonOutput({ status: 'Server is running' });
+
+  } catch (error) {
+    return jsonOutput({ status: 'error', message: error.toString() });
+  }
+}
+
 function getOrCreateFolder(parent, name) {
   var folders = parent.getFoldersByName(name);
   if (folders.hasNext()) {
@@ -50,8 +87,4 @@ function getOrCreateFolder(parent, name) {
 function jsonOutput(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
-}
-
-function doGet(e) {
-  return jsonOutput({ status: 'Server is running' });
 }
