@@ -218,7 +218,9 @@
   }
 
   /* ---- جلب اللي اترفع من Drive وعرضه في الموقع ---- */
-  const DRIVE_IMAGE_URL = (id) => `https://drive.google.com/uc?export=view&id=${id}`;
+  // ✅ الصيغة دي (lh3.googleusercontent.com) أكتر ثباتاً لعرض الصور جوه <img>
+  // من صيغة drive.google.com/uc?export=view اللي بتتعطل أحياناً جوه صفحات تانية
+  const DRIVE_IMAGE_URL = (id) => `https://lh3.googleusercontent.com/d/${id}`;
   const DRIVE_PREVIEW_URL = (id) => `https://drive.google.com/file/d/${id}/preview`;
 
   async function fetchDriveList(category) {
