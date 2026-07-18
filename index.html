@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>for you</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Great+Vibes&family=Manrope:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- film grain + vignette overlay, present across the whole experience -->
+<div class="grain-overlay" aria-hidden="true"></div>
+<div class="vignette-overlay" aria-hidden="true"></div>
+
+<!-- floating heart particles, ambient background -->
+<div class="hearts-field" id="heartsField" aria-hidden="true"></div>
+
+<!-- ======================== -->
+<!-- 1) LOGIN SCREEN -->
+<!-- ======================== -->
+<section id="loginScreen" class="screen login-screen" aria-label="Login">
+  <div class="login-card">
+    <p class="login-eyebrow">a private door</p>
+    <h1 class="login-title">enter the password</h1>
+    <form id="loginForm" class="login-form" autocomplete="off">
+      <div class="input-wrap">
+        <input type="text" id="passwordInput" class="password-input" placeholder="••••••••" aria-label="Password" />
+        <span class="input-glow" aria-hidden="true"></span>
+      </div>
+      <button type="submit" class="enter-btn">
+        <span>Enter</span>
+      </button>
+      <p id="loginError" class="login-error" role="alert"></p>
+    </form>
+  </div>
+</section>
+
+<!-- ======================== -->
+<!-- 2) FAKE HACKING SCREEN -->
+<!-- ======================== -->
+<section id="hackScreen" class="screen hack-screen" aria-hidden="true">
+  <div class="hack-inner">
+    <div class="warning-icon" id="warningIcon">⚠</div>
+    <div class="hack-lines" id="hackLines"></div>
+    <div class="hack-progress">
+      <div class="hack-progress-bar" id="hackProgressBar"></div>
+    </div>
+  </div>
+  <div class="scanlines" aria-hidden="true"></div>
+</section>
+
+<!-- ======================== -->
+<!-- 3) MAIN PAGE -->
+<!-- ======================== -->
+<main id="mainPage" class="screen main-page" aria-hidden="true">
+
+  <!-- background music -->
+  <audio id="bgMusic" loop preload="none">
+    <source src="vidssave.com Mohamed Mounir - Fi 3esh2 El Banat _ محمد منير - في عشق البنات 256kbps.webm" type="audio/webm">
+  </audio>
+  <button id="musicToggle" class="music-toggle" aria-label="Play music" aria-pressed="false">
+    <span class="music-icon music-icon-play">▶</span>
+    <span class="music-icon music-icon-pause">❚❚</span>
+    <span class="music-ring"></span>
+  </button>
+
+  <!-- HERO / TIMER -->
+  <section class="hero-section">
+    <p class="hero-eyebrow">every second, counted</p>
+    <h1 class="hero-title">ours, since<br><span>March 16, 2026</span></h1>
+
+    <div class="timer" id="timer" aria-live="off">
+      <div class="timer-unit">
+        <span class="timer-value" id="tDays">00</span>
+        <span class="timer-label">days</span>
+      </div>
+      <div class="timer-sep">:</div>
+      <div class="timer-unit">
+        <span class="timer-value" id="tHours">00</span>
+        <span class="timer-label">hours</span>
+      </div>
+      <div class="timer-sep">:</div>
+      <div class="timer-unit">
+        <span class="timer-value" id="tMinutes">00</span>
+        <span class="timer-label">minutes</span>
+      </div>
+      <div class="timer-sep">:</div>
+      <div class="timer-unit">
+        <span class="timer-value" id="tSeconds">00</span>
+        <span class="timer-label">seconds</span>
+      </div>
+    </div>
+
+    <div class="scroll-cue" aria-hidden="true">
+      <span></span>
+      <p>scroll</p>
+    </div>
+  </section>
+
+  <!-- ENVELOPE -->
+  <section class="envelope-section">
+    <p class="section-eyebrow">02 — a letter</p>
+    <h2 class="section-title">something I wrote for you</h2>
+
+    <div class="envelope-stage">
+      <div class="envelope" id="envelope" role="button" tabindex="0" aria-label="Open the letter">
+        <div class="envelope-shadow"></div>
+        <div class="envelope-body">
+          <div class="envelope-back"></div>
+          <div class="letter-peek" id="letterPeek"></div>
+          <div class="envelope-flap"></div>
+          <div class="envelope-seal">
+            <span class="seal-heart">♥</span>
+          </div>
+        </div>
+        <p class="envelope-hint">tap to open</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- message overlay -->
+  <div class="message-overlay" id="messageOverlay" aria-hidden="true">
+    <div class="message-card" id="messageCard">
+      <button class="message-close" id="messageClose" aria-label="Close letter">✕</button>
+          <p class="quote-mark">&#8220;</p>
+     <p class="quote-mark">&#8220;</p>
+      <p class="message-text fade-in-text" dir="rtl">بصي👀…
+أنا مش بعرف أرتب الكلام أوي، بس هقولك اللي حاسس بيه وخلاص…
+
+إنتي مش مجرد حد عدى في حياتي،
+إنتي غيرتيني 
+
+أنا عارف إنك ساعات بتختفي، ومش بلومك،
+كلنا بنحتاج وقت لنفسنا…
+بس لما غيبتي الفترة اللي فاتت، حسيت إني تايه شوية،
+لأنك بقيتي جزء من يومي.
+
+ولو في يوم حبيتي تتكلمي مع حد، تفضفضي…
+أنا هبقى موجود.
+هسمعك ومن غير ما أزهق،
+ولو عايزة تنكدي كمان 😂😂 نكّدي براحتك يا كنج…
+على قلبي زي العسل والله 🌹😍
+
+أنا عارف إنها بتبقي فتره  صعبة…
+بس هنعدّيها .
+
+ومتخافيش تبقي على طبيعتك،
+لأن كل واحد محتاج مكان آمن يكون فيه نفسه …
+وأنا حابب أكون المكان ده 
+(يا سلام يا واد يا بودي ع الحنية 😂😂😂)
+
+والويب ده معمول علشانك انتي…
+كل ما تحسي إنك زعلانة أو مخنوقة، ادخليلُه.
+
+هتلاقي فيه:
+أغنيتك المفضلة 🎧
+وشوية من صورك التحفة 📸
+ومع الوقت هنضيف أحلى لحظات في حياتك ✨
+(أحمم… أكيد أنا هبقى موجود يعني 😉)
+
+⸻
+
+دي الـ Safe Space بتاعتك…
+مكان تهربي له من أي حاجة تضايقك،
+وتلاقي فيه راحة حتى لو بسيطة…
+المهم إنها تساعدك تخرجي من اللي إنتي فيه ❤️
+
+⸻</p>
+      <p class="message-signoff">Your Khazo2</p>
+    </div>
+  </div>
+
+  <!-- GALLERY -->
+  <section class="gallery-section">
+    <p class="section-eyebrow">03 — memories</p>
+    <h2 class="section-title">moments I keep replaying</h2>
+
+    <div class="gallery-slider" id="gallerySlider">
+      <div class="gallery-card" data-index="0">
+        <img src="1.jpg" alt="A quiet moment together" loading="lazy">
+      </div>
+      <div class="gallery-card" data-index="1">
+        <img src="4.jpg" alt="Walking hand in hand" loading="lazy">
+      </div>
+      <div class="gallery-card" data-index="2">
+        <img src="2.jpg" alt="A warm embrace" loading="lazy">
+      </div>
+      <div class="gallery-card" data-index="3">
+        <img src="5.jpg" alt="Golden hour together" loading="lazy">
+      </div>
+      <div class="gallery-card" data-index="4">
+        <img src="6.jpg" alt="Candlelight dinner" loading="lazy">
+      </div>
+      <div class="gallery-card" data-index="4">
+        <img src="3.jpg" alt="Candlelight dinner" loading="lazy">
+      </div>
+    </div>
+  </section>
+
+  <!-- fullscreen image modal -->
+  <div class="image-modal" id="imageModal" aria-hidden="true">
+    <button class="modal-close" id="modalClose" aria-label="Close image">✕</button>
+    <button class="modal-nav modal-prev" id="modalPrev" aria-label="Previous image">‹</button>
+    <img id="modalImage" class="modal-image" src="" alt="">
+    <button class="modal-nav modal-next" id="modalNext" aria-label="Next image">›</button>
+  </div>
+
+  <!-- FEATURED VIDEO -->
+  <section class="video-section">
+    <p class="section-eyebrow">04 — a little film</p>
+    <h2 class="section-title">watch this, for me?</h2>
+    <div class="video-frame">
+      <video
+        src="21.mp4"
+        title="Featured video"
+        controls
+        preload="metadata"
+        playsinline
+        muted="false">
+      </video>
+    </div>
+  </section>
+
+  <!-- ======================== -->
+  <!-- 05) UPLOAD SPACE (Drive) -->
+  <!-- ======================== -->
+  <section class="upload-section">
+    <p class="section-eyebrow">05 — the safe space</p>
+    <h2 class="section-title">leave something here</h2>
+
+    <div class="upload-grid">
+
+      <!-- IMAGE UPLOAD -->
+      <div class="upload-card">
+        <div class="upload-icon">🖼</div>
+        <h3 class="upload-card-title">صورة</h3>
+        <p class="upload-card-hint">ارفعي أي صورة حابة تحفظيها</p>
+        <label class="upload-btn">
+          <span id="imageUploadLabel">اختاري صورة</span>
+          <input type="file" id="imageInput" accept="image/*" hidden>
+        </label>
+        <div class="upload-status" id="imageStatus"></div>
+      </div>
+
+      <!-- VOICE NOTE -->
+      <div class="upload-card">
+        <div class="upload-icon">🎙</div>
+        <h3 class="upload-card-title">Voice Note</h3>
+        <p class="upload-card-hint">سجّلي أي حاجة حابة تقوليها</p>
+        <button type="button" class="upload-btn record-btn" id="recordBtn">
+          <span class="record-dot" id="recordDot"></span>
+          <span id="recordLabel">ابدئي التسجيل</span>
+        </button>
+        <div class="upload-status" id="voiceStatus"></div>
+        <ul class="voice-notes-list" id="voiceNotesList" aria-live="polite"></ul>
+      </div>
+
+      <!-- VIDEO UPLOAD -->
+      <div class="upload-card">
+        <div class="upload-icon">🎬</div>
+        <h3 class="upload-card-title">فيديو</h3>
+        <p class="upload-card-hint">ارفعي أي فيديو حابة تحفظيه</p>
+        <label class="upload-btn">
+          <span id="videoUploadLabel">اختاري فيديو</span>
+          <input type="file" id="videoInput" accept="video/*" hidden>
+        </label>
+        <div class="upload-status" id="videoStatus"></div>
+      </div>
+
+    </div>
+
+    <p class="upload-note">كل حاجة بترفعيها بتتحفظ في مكان آمن، ومحدش يشوفها غيره 🌹</p>
+  </section>
+
+  <footer class="footer-note">
+    <span class="footer-heart">♥</span>
+    <p>made slowly, with all of it</p>
+  </footer>
+
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>
