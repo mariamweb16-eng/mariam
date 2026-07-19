@@ -236,11 +236,9 @@
   const DRIVE_IMAGE_URL = (id) => `https://lh3.googleusercontent.com/d/${id}`;
   // ملحوظة: استخدمنا كان قبل كده iframe بتاع drive.google.com/.../preview لعرض الفيديوهات،
   // بس جوجل حدّثت سياسة الأمان بتاعتها (CSP: frame-ancestors) وبقت بتمنع تضمين صفحات Drive
-  // جوه iframe في أي موقع خارجي. الحل: نشغّل الفيديو والصوت مباشرة بعنصر <video>/<audio>.
-  // ✅ رابط drive.google.com/uc?export=view مش ثابت للصوت والفيديو (بيرجع أحياناً صفحة تأكيد
-  // بدل الملف نفسه فبيفشل التشغيل). بنستخدم بدل منه نفس صيغة lh3.googleusercontent.com
-  // اللي بنستخدمها للصور، وهي بتشتغل بشكل موثوق أكتر مع الصوت والفيديو كمان.
-  const DRIVE_DIRECT_URL = (id) => `https://lh3.googleusercontent.com/d/${id}`;
+  // جوه iframe في أي موقع خارجي. الحل: نشغّل الفيديو والصوت مباشرة بعنصر <video>/<audio>
+  // برابط العرض المباشر ده، اللي هو نفسه اللي كان شغال قبل كده مع الصوت.
+  const DRIVE_DIRECT_URL = (id) => `https://drive.google.com/uc?export=view&id=${id}`;
 
   async function fetchDriveList(category) {
     if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'PASTE_YOUR_WEB_APP_URL_HERE') return [];
