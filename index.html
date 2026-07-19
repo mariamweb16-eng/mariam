@@ -188,6 +188,10 @@
         <span class="view-all-icon">⊞</span>
         <span>شوفي كل الصور</span>
       </button>
+      <button type="button" class="view-all-btn" id="viewAllVideosBtn">
+        <span class="view-all-icon">▶</span>
+        <span>شوفي كل الفيديوهات</span>
+      </button>
     </div>
   </section>
 
@@ -207,18 +211,35 @@
     </div>
   </div>
 
+  <div class="gallery-grid-modal" id="videoGridModal" aria-hidden="true">
+    <div class="gallery-grid-inner">
+      <button class="modal-close" id="videoGridClose" aria-label="Close videos">✕</button>
+      <p class="section-eyebrow">04 — a little film</p>
+      <h3 class="gallery-grid-title">كل الفيديوهات</h3>
+      <div class="gallery-grid video-grid" id="videoGrid"></div>
+    </div>
+  </div>
+
+  <div class="image-modal video-lightbox" id="videoLightbox" aria-hidden="true">
+    <button class="modal-close" id="videoLightboxClose" aria-label="Close video">✕</button>
+    <video id="videoLightboxPlayer" class="modal-video" controls playsinline></video>
+  </div>
+
   <section class="video-section">
     <p class="section-eyebrow">04 — a little film</p>
     <h2 class="section-title">watch this, for me?</h2>
     <div class="video-frame">
       <video
+        id="featuredVideo"
         src="21.mp4"
         title="Featured video"
         controls
+        controlsList="nodownload"
         preload="metadata"
         playsinline
         muted="false">
       </video>
+      <div class="video-frame-glow" aria-hidden="true"></div>
     </div>
   </section>
 

@@ -54,6 +54,14 @@
   const galleryGridClose = document.getElementById('galleryGridClose');
   const galleryGrid = document.getElementById('galleryGrid');
 
+  const viewAllVideosBtn = document.getElementById('viewAllVideosBtn');
+  const videoGridModal = document.getElementById('videoGridModal');
+  const videoGridClose = document.getElementById('videoGridClose');
+  const videoGrid = document.getElementById('videoGrid');
+  const videoLightbox = document.getElementById('videoLightbox');
+  const videoLightboxPlayer = document.getElementById('videoLightboxPlayer');
+  const videoLightboxClose = document.getElementById('videoLightboxClose');
+
   /* ============================================
      AMBIENT FLOATING HEARTS
      ============================================ */
@@ -228,9 +236,11 @@
   const DRIVE_IMAGE_URL = (id) => `https://lh3.googleusercontent.com/d/${id}`;
   // ملحوظة: استخدمنا كان قبل كده iframe بتاع drive.google.com/.../preview لعرض الفيديوهات،
   // بس جوجل حدّثت سياسة الأمان بتاعتها (CSP: frame-ancestors) وبقت بتمنع تضمين صفحات Drive
-  // جوه iframe في أي موقع خارجي. الحل: نشغّل الفيديو مباشرة بعنصر <video> برابط العرض المباشر،
-  // بنفس الطريقة اللي بنشغّل بيها الصوت.
-  const DRIVE_DIRECT_URL = (id) => `https://drive.google.com/uc?export=view&id=${id}`;
+  // جوه iframe في أي موقع خارجي. الحل: نشغّل الفيديو والصوت مباشرة بعنصر <video>/<audio>.
+  // ✅ رابط drive.google.com/uc?export=view مش ثابت للصوت والفيديو (بيرجع أحياناً صفحة تأكيد
+  // بدل الملف نفسه فبيفشل التشغيل). بنستخدم بدل منه نفس صيغة lh3.googleusercontent.com
+  // اللي بنستخدمها للصور، وهي بتشتغل بشكل موثوق أكتر مع الصوت والفيديو كمان.
+  const DRIVE_DIRECT_URL = (id) => `https://lh3.googleusercontent.com/d/${id}`;
 
   async function fetchDriveList(category) {
     if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'PASTE_YOUR_WEB_APP_URL_HERE') return [];
@@ -558,6 +568,85 @@
     if (e.key === 'Escape' && galleryGridModal.classList.contains('visible')) closeGalleryGrid();
   });
 
+  /* ---- "شوفي كل الفيديوهات" — grid of every uploaded video ---- */
+  function openVideoLightbox(src, title) {
+    videoLightboxPlayer.src = src;
+    videoLightboxPlayer.title = title || 'video';
+    videoLightbox.classList.add('visible');
+    videoLightbox.setAttribute('aria-hidden', 'false');
+    videoLightboxPlayer.play().catch(() => {});
+  }
+
+  function closeVideoLightbox() {
+    videoLightboxPlayer.pause();
+    videoLightboxPlayer.removeAttribute('src');
+    videoLightboxPlayer.load();
+    videoLightbox.classList.remove('visible');
+    videoLightbox.setAttribute('aria-hidden', 'true');
+  }
+
+  if (videoLightboxClose) videoLightboxClose.addEventListener('click', closeVideoLightbox);
+  videoLightbox.addEventListener('click', (e) => {
+    if (e.target === videoLightbox) closeVideoLightbox();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && videoLightbox.classList.contains('visible')) closeVideoLightbox();
+  });
+
+  async function populateVideoGrid() {
+    videoGrid.innerHTML = '<p class="upload-status">بنجيب الفيديوهات...</p>';
+    const videos = await fetchDriveList('Videos');
+    videoGrid.innerHTML = '';
+
+    if (videos.length === 0) {
+      videoGrid.innerHTML = '<p class="upload-status">لسه مفيش فيديوهات مرفوعة</p>';
+      return;
+    }
+
+    videos.forEach((item) => {
+      const item_el = document.createElement('div');
+      item_el.className = 'gallery-grid-item video-grid-item';
+
+      const thumb = document.createElement('video');
+      thumb.src = DRIVE_DIRECT_URL(item.id);
+      thumb.preload = 'metadata';
+      thumb.muted = true;
+      thumb.playsInline = true;
+
+      const playIcon = document.createElement('span');
+      playIcon.className = 'video-grid-play';
+      playIcon.textContent = '▶';
+
+      item_el.appendChild(thumb);
+      item_el.appendChild(playIcon);
+      item_el.addEventListener('click', () => {
+        closeVideoGrid();
+        openVideoLightbox(DRIVE_DIRECT_URL(item.id), item.name);
+      });
+      videoGrid.appendChild(item_el);
+    });
+  }
+
+  function openVideoGrid() {
+    populateVideoGrid();
+    videoGridModal.classList.add('visible');
+    videoGridModal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeVideoGrid() {
+    videoGridModal.classList.remove('visible');
+    videoGridModal.setAttribute('aria-hidden', 'true');
+  }
+
+  if (viewAllVideosBtn) viewAllVideosBtn.addEventListener('click', openVideoGrid);
+  if (videoGridClose) videoGridClose.addEventListener('click', closeVideoGrid);
+  videoGridModal.addEventListener('click', (e) => {
+    if (e.target === videoGridModal) closeVideoGrid();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && videoGridModal.classList.contains('visible')) closeVideoGrid();
+  });
+
   /* ============================================
      4) UPLOADS — send to Google Drive via Apps Script
      ============================================ */
@@ -659,29 +748,62 @@
     });
   }
 
+  // بعض المتصفحات (خصوصاً Safari/iOS) مش بتدعم audio/webm — بنختار أول صيغة مدعومة فعلياً
+  // عشان التسجيل ميطلعش فاضي أو يفشل في التشغيل بعدين
+  function getSupportedMimeType() {
+    const candidates = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/aac',
+      'audio/ogg;codecs=opus'
+    ];
+    if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported) return '';
+    return candidates.find((type) => MediaRecorder.isTypeSupported(type)) || '';
+  }
+
   async function startRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       recordedChunks = [];
-      mediaRecorder = new MediaRecorder(stream);
+      const mimeType = getSupportedMimeType();
+      mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      const recordedType = mediaRecorder.mimeType || mimeType || 'audio/webm';
 
       mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) recordedChunks.push(e.data);
+        if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+      };
+
+      mediaRecorder.onerror = () => {
+        voiceStatus.textContent = 'حصل خطأ في التسجيل، جربي تاني';
+        stream.getTracks().forEach((track) => track.stop());
+        isRecording = false;
+        recordBtn.classList.remove('recording');
+        recordLabel.textContent = 'ابدئي التسجيل';
       };
 
       mediaRecorder.onstop = async () => {
-        const blob = new Blob(recordedChunks, { type: 'audio/webm' });
-        addVoiceNoteToList(blob);
         // نوقف كل التراكات عشان نطفي الميكروفون
         stream.getTracks().forEach((track) => track.stop());
 
+        const blob = new Blob(recordedChunks, { type: recordedType });
+
+        if (!blob.size) {
+          voiceStatus.textContent = 'التسجيل طلع فاضي، جربي تاني';
+          return;
+        }
+
+        addVoiceNoteToList(blob);
+
         // نرفعها أوتوماتيك على Drive
-        const fakeFile = new File([blob], 'voice-note.webm', { type: 'audio/webm' });
+        const ext = recordedType.includes('mp4') ? 'm4a' : recordedType.includes('ogg') ? 'ogg' : 'webm';
+        const fakeFile = new File([blob], `voice-note.${ext}`, { type: recordedType });
         await uploadToDrive({ file: fakeFile, category: 'VoiceNotes', statusEl: voiceStatus, fileNamePrefix: 'voice' });
         loadSavedVoiceNotes(); // نحدّث القايمة تحت في قسم "your voice notes"
       };
 
-      mediaRecorder.start();
+      // بنطلب دفعة بيانات كل ثانية عشان نضمن إن فيه بيانات اترجعت حتى لو التسجيل قصير جداً
+      mediaRecorder.start(1000);
       isRecording = true;
       recordBtn.classList.add('recording');
       recordLabel.textContent = 'وقفي التسجيل';
