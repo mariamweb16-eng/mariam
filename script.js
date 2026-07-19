@@ -240,9 +240,32 @@
   // ✅ الصيغة دي (lh3.googleusercontent.com) أكتر ثباتاً لعرض الصور جوه <img>
   // من صيغة drive.google.com/uc?export=view اللي بتتعطل أحياناً جوه صفحات تانية
   const DRIVE_IMAGE_URL = (id) => `https://lh3.googleusercontent.com/d/${id}`;
-  // الرابط المباشر بتاع Drive (uc?export=view) مش مضمون للفيديو ولا للصوت — بيوقف صفحة
-  // تأكيد بدل الملف نفسه أحيانًا. الطريقة المضمونة هي iframe بتاع preview بتاع Drive.
-  const DRIVE_PREVIEW_URL = (id) => `https://drive.google.com/file/d/${id}/preview`;
+
+  // بيجيب بايتات الفيديو/الصوت من الـ Apps Script (action=stream) ويحوّلها لرابط
+  // blob محلي، عشان نشغّلها بعناصر <video>/<audio> بتاعتنا احنا، من غير أي واجهة
+  // أو قيود من جوجل درايف. النتايج بتتخزن مؤقتًا عشان مانطلبش نفس الملف مرتين.
+  const streamUrlCache = new Map();
+
+  async function fetchDriveBlobUrl(id) {
+    if (streamUrlCache.has(id)) return streamUrlCache.get(id);
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'PASTE_YOUR_WEB_APP_URL_HERE') return null;
+    try {
+      const res = await fetch(`${APPS_SCRIPT_URL}?action=stream&id=${encodeURIComponent(id)}`);
+      const data = await res.json();
+      if (data.status !== 'success' || !data.data) return null;
+
+      const byteChars = atob(data.data);
+      const byteNumbers = new Uint8Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+      const blob = new Blob([byteNumbers], { type: data.mimeType || 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+
+      streamUrlCache.set(id, url);
+      return url;
+    } catch (err) {
+      return null;
+    }
+  }
 
   async function fetchDriveList(category) {
     if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'PASTE_YOUR_WEB_APP_URL_HERE') return [];
@@ -276,13 +299,17 @@
     videos.forEach((item) => {
       const card = document.createElement('div');
       card.className = 'gallery-card gallery-card-video';
-      const iframe = document.createElement('iframe');
-      iframe.src = DRIVE_PREVIEW_URL(item.id);
-      iframe.setAttribute('allow', 'autoplay');
-      iframe.setAttribute('allowfullscreen', '');
-      iframe.title = item.name || 'فيديو محفوظ';
-      card.appendChild(iframe);
+      const video = document.createElement('video');
+      video.controls = true;
+      video.preload = 'metadata';
+      video.playsInline = true;
+      video.title = item.name || 'فيديو محفوظ';
+      card.appendChild(video);
       gallerySlider.appendChild(card);
+
+      fetchDriveBlobUrl(item.id).then((url) => {
+        if (url) video.src = url;
+      });
     });
   }
 
@@ -353,40 +380,22 @@
     return wrapper;
   }
 
-  // بلاير الفويسات المحفوظة على Drive: شكل الموجة ده ديكور بس (Drive iframe مقفول
-  // ومنقدرش نتحكم فيه أو نزامنه مع الصوت الحقيقي)، والتشغيل الفعلي بيحصل جوه الـ iframe
-  // الصغير تحته، وهو الطريقة المضمونة إنها تشتغل مع كل الملفات.
-  function buildVoiceCard(item) {
+  // بلاير الفويسات المحفوظة على Drive: بيستخدم نفس شكل الموجة الحلو بتاع الفويسات
+  // اللي بتتسجل لايف، بس دلوقتي شغال بصوت حقيقي (مش ديكور) لأننا بنجيب البايتات
+  // مباشرة من الـ Apps Script بدل ما نعدّي على واجهة جوجل.
+  function buildSavedVoiceItem(item) {
     const li = document.createElement('li');
-    li.className = 'voice-note-item saved';
+    li.className = 'voice-note-item';
 
-    const wrapper = document.createElement('div');
-    wrapper.className = 'ig-voice-note saved-note';
+    const audio = document.createElement('audio');
+    audio.preload = 'metadata';
 
-    const icon = document.createElement('span');
-    icon.className = 'ig-voice-note-icon';
-    icon.textContent = '🎧';
+    li.appendChild(buildVoicePlayer(audio, { savedNote: true }));
 
-    const waveform = document.createElement('div');
-    waveform.className = 'ig-voice-waveform static';
-    for (let i = 0; i < WAVEFORM_BAR_COUNT; i++) {
-      const bar = document.createElement('span');
-      const height = 25 + Math.round(Math.random() * 75);
-      bar.style.setProperty('--bar-h', height + '%');
-      bar.style.setProperty('--bar-delay', (Math.random() * 0.9).toFixed(2) + 's');
-      waveform.appendChild(bar);
-    }
+    fetchDriveBlobUrl(item.id).then((url) => {
+      if (url) audio.src = url;
+    });
 
-    wrapper.appendChild(icon);
-    wrapper.appendChild(waveform);
-
-    const iframe = document.createElement('iframe');
-    iframe.className = 'voice-note-frame';
-    iframe.src = DRIVE_PREVIEW_URL(item.id);
-    iframe.title = item.name || 'تسجيل صوتي';
-
-    li.appendChild(wrapper);
-    li.appendChild(iframe);
     return li;
   }
 
@@ -408,7 +417,7 @@
     container.innerHTML = '';
 
     notes.slice(0, 3).forEach((item) => {
-      container.appendChild(buildVoiceCard(item));
+      container.appendChild(buildSavedVoiceItem(item));
     });
 
     if (voiceActions) {
@@ -426,7 +435,7 @@
     }
 
     allSavedVoiceNotes.forEach((item) => {
-      voiceGrid.appendChild(buildVoiceCard(item));
+      voiceGrid.appendChild(buildSavedVoiceItem(item));
     });
   }
 
@@ -437,9 +446,9 @@
   }
 
   function closeVoiceGrid() {
-    // نوقف أي تسجيل شغال جوه المودال قبل ما نقفله (بإعادة تحميل الـ iframe)
+    // نوقف أي تسجيل شغال جوه المودال قبل ما نقفله
     if (voiceGrid) {
-      voiceGrid.querySelectorAll('iframe').forEach((f) => { f.src = f.src; });
+      voiceGrid.querySelectorAll('audio').forEach((a) => a.pause());
     }
     voiceGridModal.classList.remove('visible');
     voiceGridModal.setAttribute('aria-hidden', 'true');
@@ -649,15 +658,23 @@
   });
 
   /* ---- "شوفي كل الفيديوهات" — grid of every uploaded video ---- */
-  function openVideoLightbox(src, title) {
-    videoLightboxPlayer.src = src;
+  async function openVideoLightbox(id, title) {
+    videoLightboxPlayer.removeAttribute('src');
     videoLightboxPlayer.title = title || 'video';
     videoLightbox.classList.add('visible');
     videoLightbox.setAttribute('aria-hidden', 'false');
+
+    const url = await fetchDriveBlobUrl(id);
+    if (url) {
+      videoLightboxPlayer.src = url;
+      videoLightboxPlayer.play().catch(() => {});
+    }
   }
 
   function closeVideoLightbox() {
+    videoLightboxPlayer.pause();
     videoLightboxPlayer.removeAttribute('src');
+    videoLightboxPlayer.load();
     videoLightbox.classList.remove('visible');
     videoLightbox.setAttribute('aria-hidden', 'true');
   }
@@ -684,9 +701,10 @@
       const item_el = document.createElement('div');
       item_el.className = 'gallery-grid-item video-grid-item';
 
-      const thumb = document.createElement('iframe');
-      thumb.src = DRIVE_PREVIEW_URL(item.id);
-      thumb.setAttribute('allow', 'autoplay');
+      const thumb = document.createElement('video');
+      thumb.preload = 'metadata';
+      thumb.muted = true;
+      thumb.playsInline = true;
       thumb.title = item.name || 'فيديو محفوظ';
 
       const playIcon = document.createElement('span');
@@ -697,9 +715,13 @@
       item_el.appendChild(playIcon);
       item_el.addEventListener('click', () => {
         closeVideoGrid();
-        openVideoLightbox(DRIVE_PREVIEW_URL(item.id), item.name);
+        openVideoLightbox(item.id, item.name);
       });
       videoGrid.appendChild(item_el);
+
+      fetchDriveBlobUrl(item.id).then((url) => {
+        if (url) thumb.src = url;
+      });
     });
   }
 

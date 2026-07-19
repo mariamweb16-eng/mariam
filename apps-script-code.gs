@@ -4,7 +4,7 @@
  * ============================================
  * الخطوات:
  * 1. غيّر MAIN_FOLDER_ID تحت بـ الـ ID بتاع الفولدر اللي عايز الملفات تتحفظ فيه
- * 2. اعمل Deploy كـ Web App (الشرح في الرسالة)
+ * 2. اعمل Deploy جديد (New deployment) كـ Web App بعد أي تعديل هنا
  */
 
 var MAIN_FOLDER_ID = '1iZhGqfUj4b17_reC3OpwKne4eaqUxSo2';
@@ -44,6 +44,10 @@ function doPost(e) {
 
 // بيرجع قايمة بكل الملفات في category معينة (Images / Videos / VoiceNotes)
 // بيتنادى من الموقع كده: APPS_SCRIPT_URL?action=list&category=Images
+//
+// وبيرجع كمان بايتات الملف نفسه (base64) عشان نشغّله بـ <video>/<audio> بتاعنا
+// من غير ما نعدّي على واجهة جوجل خالص:
+// APPS_SCRIPT_URL?action=stream&id=FILE_ID
 function doGet(e) {
   try {
     var action = e.parameter.action;
@@ -67,6 +71,21 @@ function doGet(e) {
       items.sort(function (a, b) { return b.date - a.date; });
 
       return jsonOutput({ status: 'success', items: items });
+    }
+
+    if (action === 'stream') {
+      var id = e.parameter.id;
+      if (!id) {
+        return jsonOutput({ status: 'error', message: 'missing id' });
+      }
+      var file = DriveApp.getFileById(id);
+      var blob = file.getBlob();
+
+      return jsonOutput({
+        status: 'success',
+        mimeType: blob.getContentType(),
+        data: Utilities.base64Encode(blob.getBytes())
+      });
     }
 
     return jsonOutput({ status: 'Server is running' });
