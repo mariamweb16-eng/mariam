@@ -62,6 +62,12 @@
   const videoLightboxPlayer = document.getElementById('videoLightboxPlayer');
   const videoLightboxClose = document.getElementById('videoLightboxClose');
 
+  const voiceActions = document.getElementById('voiceActions');
+  const viewAllVoicesBtn = document.getElementById('viewAllVoicesBtn');
+  const voiceGridModal = document.getElementById('voiceGridModal');
+  const voiceGridClose = document.getElementById('voiceGridClose');
+  const voiceGrid = document.getElementById('voiceGrid');
+
   /* ============================================
      AMBIENT FLOATING HEARTS
      ============================================ */
@@ -234,8 +240,8 @@
   // ✅ الصيغة دي (lh3.googleusercontent.com) أكتر ثباتاً لعرض الصور جوه <img>
   // من صيغة drive.google.com/uc?export=view اللي بتتعطل أحياناً جوه صفحات تانية
   const DRIVE_IMAGE_URL = (id) => `https://lh3.googleusercontent.com/d/${id}`;
-  // رابط الـ uc?export=view بتاع Drive مش موثوق فيه للفيديو/الصوت (بيوقف صفحة تأكيد بدل
-  // الملف نفسه على أغلب الملفات). الطريقة اللي فعلاً شغالة هي iframe بتاع preview بتاع Drive.
+  // الرابط المباشر بتاع Drive (uc?export=view) مش مضمون للفيديو ولا للصوت — بيوقف صفحة
+  // تأكيد بدل الملف نفسه أحيانًا. الطريقة المضمونة هي iframe بتاع preview بتاع Drive.
   const DRIVE_PREVIEW_URL = (id) => `https://drive.google.com/file/d/${id}/preview`;
 
   async function fetchDriveList(category) {
@@ -347,30 +353,108 @@
     return wrapper;
   }
 
+  // بلاير الفويسات المحفوظة على Drive: شكل الموجة ده ديكور بس (Drive iframe مقفول
+  // ومنقدرش نتحكم فيه أو نزامنه مع الصوت الحقيقي)، والتشغيل الفعلي بيحصل جوه الـ iframe
+  // الصغير تحته، وهو الطريقة المضمونة إنها تشتغل مع كل الملفات.
+  function buildVoiceCard(item) {
+    const li = document.createElement('li');
+    li.className = 'voice-note-item saved';
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'ig-voice-note saved-note';
+
+    const icon = document.createElement('span');
+    icon.className = 'ig-voice-note-icon';
+    icon.textContent = '🎧';
+
+    const waveform = document.createElement('div');
+    waveform.className = 'ig-voice-waveform static';
+    for (let i = 0; i < WAVEFORM_BAR_COUNT; i++) {
+      const bar = document.createElement('span');
+      const height = 25 + Math.round(Math.random() * 75);
+      bar.style.setProperty('--bar-h', height + '%');
+      bar.style.setProperty('--bar-delay', (Math.random() * 0.9).toFixed(2) + 's');
+      waveform.appendChild(bar);
+    }
+
+    wrapper.appendChild(icon);
+    wrapper.appendChild(waveform);
+
+    const iframe = document.createElement('iframe');
+    iframe.className = 'voice-note-frame';
+    iframe.src = DRIVE_PREVIEW_URL(item.id);
+    iframe.title = item.name || 'تسجيل صوتي';
+
+    li.appendChild(wrapper);
+    li.appendChild(iframe);
+    return li;
+  }
+
+  let allSavedVoiceNotes = [];
+
   async function loadSavedVoiceNotes() {
     const notes = await fetchDriveList('VoiceNotes');
+    allSavedVoiceNotes = notes;
     const container = document.getElementById('savedVoiceNotesList');
     const emptyMsg = document.getElementById('savedVoiceNotesEmpty');
     if (!container) return;
 
-    if (notes.length === 0) return; // خليه على رسالة "لسه مفيش" الافتراضية
+    if (notes.length === 0) {
+      if (voiceActions) voiceActions.style.display = 'none';
+      return; // خليه على رسالة "لسه مفيش" الافتراضية
+    }
 
     if (emptyMsg) emptyMsg.remove();
     container.innerHTML = '';
 
-    notes.forEach((item) => {
-      const li = document.createElement('li');
-      li.className = 'voice-note-item';
+    notes.slice(0, 3).forEach((item) => {
+      container.appendChild(buildVoiceCard(item));
+    });
 
-      const iframe = document.createElement('iframe');
-      iframe.className = 'voice-note-frame';
-      iframe.src = DRIVE_PREVIEW_URL(item.id);
-      iframe.title = item.name || 'تسجيل صوتي';
+    if (voiceActions) {
+      voiceActions.style.display = notes.length > 3 ? 'flex' : 'none';
+    }
+  }
 
-      li.appendChild(iframe);
-      container.appendChild(li);
+  function populateVoiceGrid() {
+    if (!voiceGrid) return;
+    voiceGrid.innerHTML = '';
+
+    if (allSavedVoiceNotes.length === 0) {
+      voiceGrid.innerHTML = '<p class="upload-status">لسه مفيش تسجيلات محفوظة</p>';
+      return;
+    }
+
+    allSavedVoiceNotes.forEach((item) => {
+      voiceGrid.appendChild(buildVoiceCard(item));
     });
   }
+
+  function openVoiceGrid() {
+    populateVoiceGrid();
+    voiceGridModal.classList.add('visible');
+    voiceGridModal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeVoiceGrid() {
+    // نوقف أي تسجيل شغال جوه المودال قبل ما نقفله (بإعادة تحميل الـ iframe)
+    if (voiceGrid) {
+      voiceGrid.querySelectorAll('iframe').forEach((f) => { f.src = f.src; });
+    }
+    voiceGridModal.classList.remove('visible');
+    voiceGridModal.setAttribute('aria-hidden', 'true');
+  }
+
+  if (viewAllVoicesBtn) viewAllVoicesBtn.addEventListener('click', openVoiceGrid);
+  if (voiceGridClose) voiceGridClose.addEventListener('click', closeVoiceGrid);
+  if (voiceGridModal) {
+    voiceGridModal.addEventListener('click', (e) => {
+      if (e.target === voiceGridModal) closeVoiceGrid();
+    });
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && voiceGridModal && voiceGridModal.classList.contains('visible')) closeVoiceGrid();
+  });
 
   /* ---- elapsed timer (count up) ---- */
   const tDays = document.getElementById('tDays');

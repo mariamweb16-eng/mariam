@@ -294,7 +294,22 @@
     <ul class="voice-notes-list saved-voice-notes-list" id="savedVoiceNotesList">
       <li class="upload-status" id="savedVoiceNotesEmpty">لسه مفيش تسجيلات محفوظة</li>
     </ul>
+    <div class="gallery-actions" id="voiceActions" style="display:none;">
+      <button type="button" class="view-all-btn" id="viewAllVoicesBtn">
+        <span class="view-all-icon">🎙</span>
+        <span>شوفي كل الفويسات</span>
+      </button>
+    </div>
   </section>
+
+  <div class="gallery-grid-modal" id="voiceGridModal" aria-hidden="true">
+    <div class="gallery-grid-inner">
+      <button class="modal-close" id="voiceGridClose" aria-label="Close voice notes">✕</button>
+      <p class="section-eyebrow">06 — sounds you left</p>
+      <h3 class="gallery-grid-title">كل الفويسات</h3>
+      <ul class="voice-notes-list saved-voice-notes-list" id="voiceGrid"></ul>
+    </div>
+  </div>
 
   <footer class="footer-note">
     <span class="footer-heart">♥</span>
