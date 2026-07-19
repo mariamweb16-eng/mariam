@@ -234,11 +234,9 @@
   // ✅ الصيغة دي (lh3.googleusercontent.com) أكتر ثباتاً لعرض الصور جوه <img>
   // من صيغة drive.google.com/uc?export=view اللي بتتعطل أحياناً جوه صفحات تانية
   const DRIVE_IMAGE_URL = (id) => `https://lh3.googleusercontent.com/d/${id}`;
-  // ملحوظة: استخدمنا كان قبل كده iframe بتاع drive.google.com/.../preview لعرض الفيديوهات،
-  // بس جوجل حدّثت سياسة الأمان بتاعتها (CSP: frame-ancestors) وبقت بتمنع تضمين صفحات Drive
-  // جوه iframe في أي موقع خارجي. الحل: نشغّل الفيديو والصوت مباشرة بعنصر <video>/<audio>
-  // برابط العرض المباشر ده، اللي هو نفسه اللي كان شغال قبل كده مع الصوت.
-  const DRIVE_DIRECT_URL = (id) => `https://drive.google.com/uc?export=view&id=${id}`;
+  // رابط الـ uc?export=view بتاع Drive مش موثوق فيه للفيديو/الصوت (بيوقف صفحة تأكيد بدل
+  // الملف نفسه على أغلب الملفات). الطريقة اللي فعلاً شغالة هي iframe بتاع preview بتاع Drive.
+  const DRIVE_PREVIEW_URL = (id) => `https://drive.google.com/file/d/${id}/preview`;
 
   async function fetchDriveList(category) {
     if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'PASTE_YOUR_WEB_APP_URL_HERE') return [];
@@ -272,13 +270,12 @@
     videos.forEach((item) => {
       const card = document.createElement('div');
       card.className = 'gallery-card gallery-card-video';
-      const video = document.createElement('video');
-      video.src = DRIVE_DIRECT_URL(item.id);
-      video.controls = true;
-      video.preload = 'metadata';
-      video.playsInline = true;
-      video.title = item.name || 'فيديو محفوظ';
-      card.appendChild(video);
+      const iframe = document.createElement('iframe');
+      iframe.src = DRIVE_PREVIEW_URL(item.id);
+      iframe.setAttribute('allow', 'autoplay');
+      iframe.setAttribute('allowfullscreen', '');
+      iframe.title = item.name || 'فيديو محفوظ';
+      card.appendChild(iframe);
       gallerySlider.appendChild(card);
     });
   }
@@ -365,11 +362,12 @@
       const li = document.createElement('li');
       li.className = 'voice-note-item';
 
-      const audio = document.createElement('audio');
-      audio.preload = 'metadata';
-      audio.src = DRIVE_DIRECT_URL(item.id);
+      const iframe = document.createElement('iframe');
+      iframe.className = 'voice-note-frame';
+      iframe.src = DRIVE_PREVIEW_URL(item.id);
+      iframe.title = item.name || 'تسجيل صوتي';
 
-      li.appendChild(buildVoicePlayer(audio, { savedNote: true }));
+      li.appendChild(iframe);
       container.appendChild(li);
     });
   }
@@ -572,13 +570,10 @@
     videoLightboxPlayer.title = title || 'video';
     videoLightbox.classList.add('visible');
     videoLightbox.setAttribute('aria-hidden', 'false');
-    videoLightboxPlayer.play().catch(() => {});
   }
 
   function closeVideoLightbox() {
-    videoLightboxPlayer.pause();
     videoLightboxPlayer.removeAttribute('src');
-    videoLightboxPlayer.load();
     videoLightbox.classList.remove('visible');
     videoLightbox.setAttribute('aria-hidden', 'true');
   }
@@ -605,11 +600,10 @@
       const item_el = document.createElement('div');
       item_el.className = 'gallery-grid-item video-grid-item';
 
-      const thumb = document.createElement('video');
-      thumb.src = DRIVE_DIRECT_URL(item.id);
-      thumb.preload = 'metadata';
-      thumb.muted = true;
-      thumb.playsInline = true;
+      const thumb = document.createElement('iframe');
+      thumb.src = DRIVE_PREVIEW_URL(item.id);
+      thumb.setAttribute('allow', 'autoplay');
+      thumb.title = item.name || 'فيديو محفوظ';
 
       const playIcon = document.createElement('span');
       playIcon.className = 'video-grid-play';
@@ -619,7 +613,7 @@
       item_el.appendChild(playIcon);
       item_el.addEventListener('click', () => {
         closeVideoGrid();
-        openVideoLightbox(DRIVE_DIRECT_URL(item.id), item.name);
+        openVideoLightbox(DRIVE_PREVIEW_URL(item.id), item.name);
       });
       videoGrid.appendChild(item_el);
     });

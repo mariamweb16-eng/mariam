@@ -1161,10 +1161,10 @@ body {
   cursor: default;
 }
 
-.gallery-card-video video {
+.gallery-card-video iframe {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  border: 0;
   display: block;
   background: #000;
 }
@@ -1350,10 +1350,10 @@ body {
   background: #000;
 }
 
-.video-grid-item video {
+.video-grid-item iframe {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  border: 0;
   display: block;
   pointer-events: none;
 }
@@ -1377,10 +1377,12 @@ body {
 /* --- single video lightbox (reuses .image-modal styling) --- */
 .video-lightbox .modal-video {
   width: min(88vw, 780px);
+  height: min(70vh, 440px);
   max-height: 80vh;
   border-radius: 10px;
   box-shadow: 0 30px 90px rgba(0,0,0,0.7);
   background: #000;
+  border: 0;
 }
 
 /* ============================================
